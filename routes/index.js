@@ -1,6 +1,10 @@
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
 const bcrypt = require('bcryptjs')
+const jwt = require('jsonwebtoken')
+const dotenv = require('dotenv')
+
+dotenv.config()
 
 const Register = require('../models/register')
 
@@ -13,10 +17,12 @@ router.get('/', (req, res) => {
 
 router.post('/login', async (req, res) => {
   const reg = await Register.findOne({ email: req.body.email })
-  console.log(reg)
   if(!reg) return res.status(404).json("Email is wrong or you have not register")
   validatedPassword = await bcrypt.compare(req.body.password, reg.password)
   if(!validatedPassword) return res.status(404).json("Password is wrong or you have not register")
+
+  const token = jwt.sign({_id: req._id}, process.env.SECRET)
+  // res.header('auth-token', token).json(token)
   return res.status(200).json(`Welcome ${reg.firstname} ${reg.lastname}`)
 });
 
