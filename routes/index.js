@@ -1,5 +1,6 @@
 var express = require('express');
 var router = express.Router();
+const bcrypt = require('bcryptjs')
 
 const Register = require('../models/register')
 
@@ -11,9 +12,11 @@ router.get('/', (req, res) => {
 });
 
 router.post('/login', async (req, res) => {
-  const reg = await Register.findOne({ email: req.body.email, password: req.body.password })
+  const reg = await Register.findOne({ email: req.body.email })
   console.log(reg)
-  if(!reg) return res.status(404).json("You have not register")
+  if(!reg) return res.status(404).json("Email is wrong or you have not register")
+  validatedPassword = await bcrypt.compare(req.body.password, reg.password)
+  if(!validatedPassword) return res.status(404).json("Password is wrong or you have not register")
   return res.status(200).json(`Welcome ${reg.firstname} ${reg.lastname}`)
 });
 
@@ -22,13 +25,19 @@ router.post('/register', async (req, res) => {
   if(error) return res.status(404).json(error.details[0].message)
 
   const checkEmail = await Register.findOne({ email: req.body.email })
-  console.log("Database" , checkEmail)
-  console.log("Body ",req.body.email)
-  console.log(checkEmail)
   if(checkEmail) {
-    return res.json("Email exist")
+    return res.status(404).json("Email Exist")
   }else{
-    const register = new Register(req.body)
+    const salt = await bcrypt.genSalt(10)
+    const hashedPassword = await bcrypt.hash(req.body.password, salt)
+    const registerDetails = {
+      firstname: req.body.firstname,
+      lastname: req.body.lastname,
+      email: req.body.email,
+      password: hashedPassword,
+      username: req.body.username
+    }
+    const register = new Register(registerDetails)
     register.save().then(doc => res.status(200).json(doc)).catch(err => res.status(404).json({msg: err}))
   }
 })
