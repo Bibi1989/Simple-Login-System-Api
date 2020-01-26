@@ -8,19 +8,19 @@ const dotenv = require('dotenv')
 
 dotenv.config()
 
-var indexRouter = require('./routes/index');
 
 var app = express();
+app.use(express.json());
+app.use(express.urlencoded({ extended: false }));
 
 const DB_URL = process.env.DB_URL
 
 mongoose.connect(DB_URL, { useNewUrlParser: true, useUnifiedTopology: true }).then(() => console.log("Database connected")).catch((err) => console.log("Error", err))
 
 app.use(logger('dev'));
-app.use(express.json());
-app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
-app.use(express.static(path.join(__dirname, 'public')));
+// app.use(express.static(path.join(__dirname, 'public')));
+var indexRouter = require('./routes/index');
 
 app.use('/', indexRouter);
 

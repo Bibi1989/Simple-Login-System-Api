@@ -10,6 +10,7 @@ const validateRegister = (data) => {
         username: joi.string().trim().min(4)
     })
 
+    // const { error } = joi.validate(data, schema)
     const { error } = schema.validate(data, {abortEarly: false, stripUnknown: true })
     
     return {

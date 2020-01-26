@@ -7,11 +7,13 @@ const dotenv = require('dotenv')
 dotenv.config()
 
 const Register = require('../models/register')
+const auth = require('./auth')
 
 const { validateRegister } = require('../controllers/validate')
 
 /* GET home page. */
 router.get('/', (req, res) => {
+  console.log(auth(res))
   Register.find().then(doc => res.status(200).json(doc)).catch(err => res.status(400).json({msg: err}))
 });
 
@@ -27,25 +29,30 @@ router.post('/login', async (req, res) => {
 });
 
 router.post('/register', async (req, res) => {
-  const { error } = validateRegister(req.body)
-  if(error) return res.status(404).json(error.details[0].message)
+    const { error } = validateRegister(req.body)
+    if(error) return res.status(404).json(error.details[0].message)
 
-  const checkEmail = await Register.findOne({ email: req.body.email })
-  if(checkEmail) {
-    return res.status(404).json("Email Exist")
-  }else{
     const salt = await bcrypt.genSalt(10)
-    const hashedPassword = await bcrypt.hash(req.body.password, salt)
-    const registerDetails = {
-      firstname: req.body.firstname,
-      lastname: req.body.lastname,
-      email: req.body.email,
-      password: hashedPassword,
-      username: req.body.username
-    }
-    const register = new Register(registerDetails)
-    register.save().then(doc => res.status(200).json(doc)).catch(err => res.status(404).json({msg: err}))
-  }
+    const hashedPassword = await bcrypt.hashSync(req.body.password, salt)
+
+    Register.find({
+        email: req.body.email
+    }, (err, doc) => {
+        if(err) return res.status(404).json({msg: "server error"})
+        if(doc.length > 0) return res.status(404).json({msg: "email exist"})
+
+        const user = new Register({
+            firstname: req.body.firstname,
+            lastname: req.body.lastname,
+            email: req.body.email,
+            password: hashedPassword,
+            username: req.body.username
+        })
+        user.save((err, response) => {
+            if(err) return res.status(404).json({msg: "something went wrong on the server"})
+            return res.status(200).json({msg: response})
+        })
+    })
 })
 
 
